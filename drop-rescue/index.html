@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffc907">
+  <title>Drop Rescue | charity: water</title>
+  <meta name="description" content="A fast, touch-friendly game about protecting clean water and earning campus rewards.">
+  <style>
+    :root {
+      --yellow: #ffc907;
+      --ink: #111111;
+      --paper: #fffdf5;
+      --blue: #2e9df7;
+      --deep-blue: #145da0;
+      --danger: #d83a2e;
+      --muted: #6d6a61;
+      --line: #ddd8c9;
+      --shadow: 0 14px 40px rgba(17, 17, 17, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(46,157,247,.12), transparent 24rem),
+        linear-gradient(135deg, var(--paper) 0%, #ffffff 68%, #fff7d6 100%);
+      font-family: Arial, Helvetica, sans-serif;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    button { font: inherit; }
+
+    .shell {
+      width: min(100%, 960px);
+      background: #fff;
+      border: 3px solid var(--ink);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .brand-bar {
+      min-height: 72px;
+      padding: 14px 22px;
+      background: var(--yellow);
+      border-bottom: 3px solid var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand {
+      font-size: clamp(1.1rem, 3vw, 1.55rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    .mission-tag {
+      margin: 0;
+      font-size: .92rem;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .content { padding: clamp(20px, 4vw, 36px); }
+
+    .screen[hidden] { display: none; }
+
+    .start-grid {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: clamp(24px, 5vw, 54px);
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--deep-blue);
+      font-size: .9rem;
+      font-weight: 900;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(3rem, 10vw, 6.6rem);
+      line-height: .88;
+      letter-spacing: -0.075em;
+    }
+
+    .lead {
+      max-width: 42rem;
+      margin: 20px 0 24px;
+      font-size: clamp(1.05rem, 2vw, 1.2rem);
+      line-height: 1.55;
+    }
+
+    .primary,
+    .secondary {
+      min-height: 52px;
+      border: 2px solid var(--ink);
+      padding: 13px 22px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+
+    .primary { background: var(--yellow); box-shadow: 5px 5px 0 var(--ink); }
+    .secondary { background: #fff; }
+    .primary:hover, .secondary:hover { transform: translate(-2px, -2px); }
+    .primary:active, .secondary:active { transform: translate(2px, 2px); box-shadow: none; }
+    button:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
+
+    .how-to {
+      margin: 0;
+      padding: 22px;
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .how-to h2 { margin: 0 0 14px; font-size: 1.1rem; }
+    .how-to ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 13px; }
+    .how-to li { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 10px; line-height: 1.35; }
+    .symbol { width: 42px; height: 42px; border: 2px solid #fff; display: grid; place-items: center; font-size: 1.35rem; background: #262626; }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 2px solid var(--ink);
+      margin-bottom: 14px;
+    }
+
+    .stat { padding: 12px 16px; text-align: center; background: #fff; }
+    .stat + .stat { border-left: 2px solid var(--ink); }
+    .stat-label { display: block; color: var(--muted); font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .stat-value { display: block; margin-top: 2px; font-size: clamp(1.35rem, 4vw, 2rem); font-weight: 900; }
+
+    .progress-track { height: 10px; background: #ece8dd; border: 2px solid var(--ink); margin-bottom: 14px; }
+    .progress-bar { width: 0%; height: 100%; background: var(--yellow); transition: width .25s ease; }
+
+    .playfield {
+      position: relative;
+      height: min(54vh, 480px);
+      min-height: 350px;
+      overflow: hidden;
+      border: 3px solid var(--ink);
+      background:
+        linear-gradient(rgba(255,255,255,.84), rgba(255,255,255,.84)),
+        repeating-linear-gradient(0deg, transparent 0 39px, rgba(20,93,160,.12) 40px),
+        repeating-linear-gradient(90deg, transparent 0 39px, rgba(20,93,160,.12) 40px);
+      touch-action: manipulation;
+    }
+
+    .field-message {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(88%, 520px);
+      padding: 18px;
+      background: rgba(255,255,255,.92);
+      border: 2px solid var(--ink);
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 800;
+      pointer-events: none;
+    }
+
+    .target {
+      position: absolute;
+      width: clamp(64px, 12vw, 84px);
+      height: clamp(64px, 12vw, 84px);
+      border: 3px solid var(--ink);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: clamp(1.7rem, 5vw, 2.35rem);
+      cursor: pointer;
+      box-shadow: 4px 4px 0 var(--ink);
+      animation: pop .18s ease-out;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .target.clean { background: #bfe4ff; }
+    .target.bonus { background: var(--yellow); }
+    .target.pollution { background: #ffb6ae; }
+    .target:active { transform: translate(3px, 3px); box-shadow: none; }
+
+    @keyframes pop { from { opacity: 0; transform: scale(.45); } to { opacity: 1; transform: scale(1); } }
+
+    .feedback {
+      min-height: 28px;
+      margin: 12px 0 0;
+      text-align: center;
+      font-weight: 900;
+      color: var(--deep-blue);
+    }
+
+    .end-card {
+      max-width: 650px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .end-icon { font-size: 4rem; margin: 0; }
+    .end-card h2 { margin: 8px 0; font-size: clamp(2.2rem, 7vw, 4.6rem); line-height: .95; letter-spacing: -.055em; }
+    .final-score { margin: 20px auto; padding: 18px; background: var(--yellow); border: 3px solid var(--ink); font-size: 1.35rem; font-weight: 900; }
+    .reward { margin: 0 0 24px; font-size: 1.06rem; line-height: 1.55; }
+    .impact-note { margin: 18px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.45; }
+
+    @media (max-width: 700px) {
+      body { padding: 0; display: block; background: #fff; }
+      .shell { width: 100%; min-height: 100vh; border: 0; box-shadow: none; }
+      .brand-bar { border-bottom-width: 3px; }
+      .start-grid { grid-template-columns: 1fr; }
+      h1 { font-size: clamp(3.2rem, 18vw, 5.3rem); }
+      .playfield { height: 52vh; min-height: 360px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell" aria-live="polite">
+    <header class="brand-bar">
+      <div class="brand">charity: water</div>
+      <p class="mission-tag">Clean water changes everything.</p>
+    </header>
+
+    <div class="content">
+      <section id="startScreen" class="screen start-grid">
+        <div>
+          <p class="eyebrow">30-second campus challenge</p>
+          <h1>DROP<br>RESCUE</h1>
+          <p class="lead">Protect clean water before time runs out. Collect safe drops, catch bonus buckets, and keep pollution out of the supply.</p>
+          <button id="startButton" class="primary" type="button">Start the mission</button>
+        </div>
+        <aside class="how-to" aria-label="How to play">
+          <h2>How to play</h2>
+          <ul>
+            <li><span class="symbol">💧</span><span>Tap clean drops for <strong>+10</strong> points.</span></li>
+            <li><span class="symbol">🪣</span><span>Catch bonus buckets for <strong>+25</strong> points.</span></li>
+            <li><span class="symbol">⚠️</span><span>Avoid pollution or lose <strong>15</strong> points.</span></li>
+          </ul>
+        </aside>
+      </section>
+
+      <section id="gameScreen" class="screen" hidden>
+        <div class="hud" aria-label="Game status">
+          <div class="stat"><span class="stat-label">Score</span><span id="score" class="stat-value">0</span></div>
+          <div class="stat"><span class="stat-label">Time</span><span id="time" class="stat-value">30</span></div>
+          <div class="stat"><span class="stat-label">Clean drops</span><span id="drops" class="stat-value">0</span></div>
+        </div>
+        <div class="progress-track" aria-label="Progress toward 150 points"><div id="progress" class="progress-bar"></div></div>
+        <div id="playfield" class="playfield" aria-label="Drop Rescue play area">
+          <div id="fieldMessage" class="field-message">Tap the safe water. Protect the supply.</div>
+        </div>
+        <p id="feedback" class="feedback" aria-live="assertive">Mission started!</p>
+      </section>
+
+      <section id="endScreen" class="screen" hidden>
+        <div class="end-card">
+          <p class="end-icon">💧</p>
+          <p class="eyebrow">Mission complete</p>
+          <h2 id="endHeading">Water Protector</h2>
+          <div class="final-score">Final score: <span id="finalScore">0</span></div>
+          <p id="reward" class="reward"></p>
+          <button id="restartButton" class="primary" type="button">Play again</button>
+          <p class="impact-note">Drop Rescue connects everyday choices with charity: water's mission: bringing clean and safe water to people around the world.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const startScreen = document.getElementById('startScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const endScreen = document.getElementById('endScreen');
+    const startButton = document.getElementById('startButton');
+    const restartButton = document.getElementById('restartButton');
+    const playfield = document.getElementById('playfield');
+    const scoreEl = document.getElementById('score');
+    const timeEl = document.getElementById('time');
+    const dropsEl = document.getElementById('drops');
+    const progressEl = document.getElementById('progress');
+    const feedbackEl = document.getElementById('feedback');
+    const fieldMessage = document.getElementById('fieldMessage');
+    const finalScoreEl = document.getElementById('finalScore');
+    const endHeading = document.getElementById('endHeading');
+    const rewardEl = document.getElementById('reward');
+
+    let score = 0;
+    let timeLeft = 30;
+    let cleanDrops = 0;
+    let timerId = null;
+    let spawnId = null;
+    let active = false;
+    let milestone = 0;
+
+    const targetTypes = [
+      { className: 'clean', icon: '💧', label: 'Clean water drop, 10 points', points: 10, clean: true, message: '+10 clean water!' },
+      { className: 'clean', icon: '💧', label: 'Clean water drop, 10 points', points: 10, clean: true, message: '+10 clean water!' },
+      { className: 'clean', icon: '💧', label: 'Clean water drop, 10 points', points: 10, clean: true, message: '+10 clean water!' },
+      { className: 'bonus', icon: '🪣', label: 'Bonus water bucket, 25 points', points: 25, clean: true, message: '+25 bonus bucket!' },
+      { className: 'pollution', icon: '⚠️', label: 'Pollution hazard, minus 15 points', points: -15, clean: false, message: '-15 pollution!' }
+    ];
+
+    function showScreen(screen) {
+      [startScreen, gameScreen, endScreen].forEach(item => item.hidden = item !== screen);
+    }
+
+    function updateHud() {
+      scoreEl.textContent = score;
+      timeEl.textContent = timeLeft;
+      dropsEl.textContent = cleanDrops;
+      progressEl.style.width = `${Math.min(100, Math.max(0, score / 150 * 100))}%`;
+    }
+
+    function announceMilestone() {
+      if (score >= 150 && milestone < 3) {
+        milestone = 3;
+        feedbackEl.textContent = '150 points — clean water champion!';
+      } else if (score >= 100 && milestone < 2) {
+        milestone = 2;
+        feedbackEl.textContent = '100 points — campus reward unlocked!';
+      } else if (score >= 50 && milestone < 1) {
+        milestone = 1;
+        feedbackEl.textContent = '50 points — first impact milestone!';
+      }
+    }
+
+    function spawnTarget() {
+      if (!active) return;
+      const type = targetTypes[Math.floor(Math.random() * targetTypes.length)];
+      const target = document.createElement('button');
+      target.type = 'button';
+      target.className = `target ${type.className}`;
+      target.textContent = type.icon;
+      target.setAttribute('aria-label', type.label);
+
+      const size = window.innerWidth <= 700 ? 72 : 84;
+      const maxX = Math.max(0, playfield.clientWidth - size - 10);
+      const maxY = Math.max(0, playfield.clientHeight - size - 10);
+      target.style.left = `${5 + Math.random() * maxX}px`;
+      target.style.top = `${5 + Math.random() * maxY}px`;
+
+      const removeTimer = setTimeout(() => target.remove(), 1050);
+      target.addEventListener('click', () => {
+        if (!active) return;
+        clearTimeout(removeTimer);
+        score = Math.max(0, score + type.points);
+        if (type.clean) cleanDrops += 1;
+        feedbackEl.textContent = type.message;
+        target.remove();
+        updateHud();
+        announceMilestone();
+      });
+
+      playfield.appendChild(target);
+    }
+
+    function startGame() {
+      score = 0;
+      timeLeft = 30;
+      cleanDrops = 0;
+      milestone = 0;
+      active = true;
+      playfield.querySelectorAll('.target').forEach(target => target.remove());
+      fieldMessage.hidden = false;
+      showScreen(gameScreen);
+      updateHud();
+      feedbackEl.textContent = 'Mission started!';
+      setTimeout(() => { fieldMessage.hidden = true; }, 1100);
+
+      spawnTarget();
+      spawnId = setInterval(spawnTarget, 700);
+      timerId = setInterval(() => {
+        timeLeft -= 1;
+        updateHud();
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    }
+
+    function endGame() {
+      active = false;
+      clearInterval(timerId);
+      clearInterval(spawnId);
+      playfield.querySelectorAll('.target').forEach(target => target.remove());
+      finalScoreEl.textContent = score;
+
+      if (score >= 150) {
+        endHeading.textContent = 'Clean Water Champion';
+        rewardEl.textContent = 'You unlocked the Gold Campus Reward: a cafeteria meal discount and the Clean Water Champion badge.';
+      } else if (score >= 100) {
+        endHeading.textContent = 'Water Protector';
+        rewardEl.textContent = 'You unlocked a campus café discount and the Water Protector badge.';
+      } else if (score >= 50) {
+        endHeading.textContent = 'Drop Defender';
+        rewardEl.textContent = 'You unlocked the Drop Defender badge. Reach 100 points to earn a campus reward.';
+      } else {
+        endHeading.textContent = 'Mission in Progress';
+        rewardEl.textContent = 'Every drop matters. Try again and reach 50 points for your first impact badge.';
+      }
+
+      showScreen(endScreen);
+      restartButton.focus();
+    }
+
+    startButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', startGame);
+  </script>
+</body>
+</html>
